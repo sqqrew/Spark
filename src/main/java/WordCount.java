@@ -18,11 +18,9 @@ import java.util.Map;
 public class WordCount {
 
     private static final String APP_NAME = " WordCount";
-    private static String pattern = "[\\,.\\*\\[\\]()!?\\-'`\"]";
-    private static List<String> list;
 
     public static void main(String[] args){
-        list = new ArrayList<String>();
+
         SparkConf conf = new SparkConf().setAppName(APP_NAME).setMaster("local");
         JavaSparkContext context = new JavaSparkContext(conf);
 
@@ -30,15 +28,13 @@ public class WordCount {
         JavaRDD<String> words = file.flatMap(new FlatMapFunction<String, String>() {
             @Override
             public Iterable<String> call(String s) throws Exception {
-                list.add("words: "+s);
-                return Arrays.asList(s.replaceAll(pattern,"").toLowerCase().split(" "));
+                return Arrays.asList(s.toLowerCase().split(" "));
             }
         });
 
         JavaPairRDD<String, Integer> pairs = words.mapToPair(new PairFunction<String, String, Integer>() {
             @Override
             public Tuple2<String, Integer> call(String s) throws Exception {
-                list.add("pairs: "+s);
                 return new Tuple2<String, Integer>(s, 1);
             }
         });
@@ -46,14 +42,10 @@ public class WordCount {
         JavaPairRDD<String, Integer> counts = pairs.reduceByKey(new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer call(Integer v1, Integer v2) throws Exception {
-                list.add(String.valueOf("counts: " + v1 +"-" +v2));
                 return v1  + v2;
             }
         });
 
         counts.sortByKey().saveAsTextFile(args[1]);
-        for (String s : list){
-            System.out.println(s);
-        }
     }
 }
